@@ -1,8 +1,1 @@
-extends:
-  - spectral:oas
-
-rules:
-  operation-description: warn
-  operation-operationId: error
-  operation-tags: warn
-  oas3-api-servers: off
+extends: [[spectral:oas, recommended]]

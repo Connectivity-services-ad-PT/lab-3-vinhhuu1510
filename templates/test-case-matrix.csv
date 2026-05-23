@@ -1,6 +1,11 @@
-ID,Folder,Endpoint,Method,Scenario,Input file/body,Expected status,Expected response check,Type,Pass/Fail,Evidence
-TC01,Functional,/health,GET,Service is alive,-,200,status=ok,functional,,
-TC02,Functional,/readings,POST,Create reading happy path,mock-data/sensor-reading-valid.json,201,"has reading_id, accepted=true",functional,,
-TC03,Negative,/readings,POST,Missing device_id,mock-data/sensor-reading-invalid-missing-device.json,400,Problem Details,negative,,
-TC04,Auth,/readings,POST,Missing token,mock-data/sensor-reading-valid.json,401,Problem Details,auth,,
-TC05,Boundary,/readings,POST,High temperature boundary,mock-data/sensor-reading-boundary.json,201/400,documented behavior,boundary,,
+ID,Method,Endpoint,InputCondition,ExpectedStatus,TestType,Description
+TC-01,GET,/health,No payload,200,Functional,Kiểm tra trạng thái sẵn sàng hoạt động của hệ thống
+TC-02,POST,/api/v1/events/access,Valid JSON data,201,Functional,Đẩy sự kiện quẹt thẻ hợp lệ và nhận kết quả đóng mở cửa
+TC-03,GET,/api/v1/alerts,Missing Bearer Token,401,Auth,Kiểm tra API từ chối request không có token
+TC-04,GET,/api/v1/alerts,Invalid Bearer Token,401,Auth,Kiểm tra API từ chối token sai
+TC-05,POST,/api/v1/events/access,Missing card_id field,400,Negative,Thiếu field bắt buộc để kiểm tra lỗi schema
+TC-06,POST,/api/v1/events/access,Invalid direction value,422,Negative,Giá trị direction không hợp lệ (ngoài IN/OUT)
+TC-07,GET,/api/v1/alerts/{id},Non-existent alert ID,404,Negative,ID không tồn tại
+TC-08,POST,/api/v1/events/access,High frequency requests,201/429,Boundary,Kiểm tra hệ thống khi gửi nhiều request liên tục
+TC-09,POST,http://localhost:4011/detect,Valid request to AI Vision mock,200,Consumer-Smoke,Test gọi mock service bên ngoài
+TC-10,GET,/health,Local environment check,200,Non-Functional,Kiểm tra thời gian phản hồi < 1000ms

@@ -1,21 +1,10 @@
-.PHONY: install lint mock mock-iot mock-vision mock-all test-mock test-local test-html test-ci clean
+.PHONY: install mock test-mock test-local test-html clean
 
 install:
 	npm install
 
-lint:
-	npm run lint:contracts
-
-mock: mock-iot
-
-mock-iot:
+mock:
 	npm run mock:iot
-
-mock-vision:
-	npm run mock:vision
-
-mock-all:
-	npm run mock:all
 
 test-mock:
 	npm run test:mock
@@ -26,8 +15,5 @@ test-local:
 test-html:
 	npm run test:html
 
-test-ci:
-	npm run test:ci
-
 clean:
-	rm -f reports/*.xml reports/*.html reports/*.json prism*.log
+	rm -f reports/*.xml reports/*.html
