@@ -31,11 +31,8 @@ jobs:
       - name: Wait 5s for Prism
         run: sleep 5
 
-      - name: Show Core log
-        run: cat core.log || true
-
-      - name: Show Gate log
-        run: cat gate.log || true
+      - name: Show Prism log (DEBUG)
+        run: cat prism.log
 
       - name: Wait for mock
         run: |
@@ -57,8 +54,6 @@ jobs:
           name: reports
           path: reports/
 
-      - name: Show logs if failed
+      - name: Show Prism log if failed
         if: failure()
-        run: |
-          cat core.log || true
-          cat gate.log || true
+        run: cat prism.log
