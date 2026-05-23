@@ -41,7 +41,7 @@ jobs:
       - name: Wait for mock
         run: |
           npx wait-on http://localhost:4010/health --timeout 60000
-          npx wait-on http://localhost:4011/api/v1/gates/gate-lib-01 --timeout 60000
+          npx wait-on http://localhost:4011/health --timeout 60000
 
       - name: Run Newman
         run: |
