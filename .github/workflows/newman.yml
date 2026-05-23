@@ -31,9 +31,6 @@ jobs:
       - name: Wait 5s for Prism
         run: sleep 5
 
-      - name: Show Prism log (DEBUG)
-        run: cat prism.log
-
       - name: Wait for mock
         run: |
           npx wait-on http://localhost:4010/health --timeout 60000
@@ -54,6 +51,4 @@ jobs:
           name: reports
           path: reports/
 
-      - name: Show Prism log if failed
-        if: failure()
-        run: cat prism.log
+ 
