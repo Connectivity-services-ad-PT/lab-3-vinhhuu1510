@@ -4,10 +4,6 @@ on:
   push:
   pull_request:
 
-concurrency:
-  group: contract-tests-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -18,53 +14,51 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Create reports dir
-        run: mkdir -p reports
-
       - name: Lint OpenAPI
-        run: npx @redocly/cli@latest lint contracts/*.yaml
+        run: npx @redocly/cli lint contracts/*.yaml
+      - name: Install Prism
+        run: npm install -g @stoplight/prism-cli
 
       - name: Start mock servers
         run: |
-          nohup npx @stoplight/prism-cli@latest mock contracts/core-business.openapi.yaml \
-            --port 4010 --host 0.0.0.0 > core.log 2>&1 &
+          nohup npx prism mock contracts/core-business.openapi.yaml --port 4010 --host 0.0.0.0 > core.log 2>&1 &
+          nohup npx prism mock contracts/access-gate.openapi.yaml --port 4011 --host 0.0.0.0 > gate.log 2>&1 &
 
-          nohup npx @stoplight/prism-cli@latest mock contracts/access-gate.openapi.yaml \
-            --port 4011 --host 0.0.0.0 > gate.log 2>&1 &
+      - name: Wait 5s for Prism
+        run: sleep 5
 
-      - name: Verify Prism running
-        run: ps aux | grep prism || true
+      - name: Show Core log
+        run: cat core.log || true
 
-      - name: Wait for mock servers
+      - name: Show Gate log
+        run: cat gate.log || true
+
+      - name: Wait for mock
         run: |
-          npx wait-on http://localhost:4010/api/v1/customers --timeout 60000
-          npx wait-on http://localhost:4011/api/v1/gates/gate-lib-01 --timeout 60000
-
-      - name: Debug logs
-        if: always()
-        run: |
-          echo "==== CORE ===="
-          cat core.log || true
-
-          echo "==== GATE ===="
-          cat gate.log || true
+          npx wait-on http://localhost:4010/health --timeout 60000
+          npx wait-on http://localhost:4011/health --timeout 60000
 
       - name: Run Newman
         run: |
           npx newman run postman/collections/FIT4110_lab03_core_business.postman_collection.json \
-            -e postman/environments/FIT4110_lab03_core_mock.postman_environment.json \
-            -r cli,junit,htmlextra \
-            --reporter-junit-export reports/newman-report.xml \
-            --reporter-htmlextra-export reports/newman-report.html
+          -e postman/environments/FIT4110_lab03_core_mock.postman_environment.json \
+          -r cli,junit,htmlextra \
+          --reporter-junit-export reports/newman-report.xml \
+          --reporter-htmlextra-export reports/newman-report.html
+
 
       - name: Upload report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: reports/
+
+      - name: Show logs if failed
+        if: failure()
+        run: |
+          cat core.log || true
+          cat gate.log || true
