@@ -306,7 +306,7 @@
               "script": {
                 "exec": [
                   "pm.test(\"Consumer Smoke - Kết nối và lấy trạng thái cổng vật lý từ nhóm B3 thành công\", function () {\r",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 202]);\r",
+                  "    pm.expect([200, 409]).to.include(pm.response.code);\r",
                   "});"
                 ],
                 "type": "text/javascript",

@@ -22,11 +22,11 @@ jobs:
         run: npx @redocly/cli lint contracts/*.yaml
       - name: Install Prism
         run: npm install -g @stoplight/prism-cli
-      - name: Start mock server
+
+      - name: Start mock servers
         run: |
-          nohup npx prism mock contracts/core-business.openapi.yaml \
-          --port 4010 \
-          --host 0.0.0.0 > prism.log 2>&1 &
+          nohup npx prism mock contracts/core-business.openapi.yaml --port 4010 --host 0.0.0.0 > core.log 2>&1 &
+          nohup npx prism mock contracts/access-gate.openapi.yaml --port 4011 --host 0.0.0.0 > gate.log 2>&1 &
 
       - name: Wait 5s for Prism
         run: sleep 5
@@ -35,14 +35,18 @@ jobs:
         run: cat prism.log
 
       - name: Wait for mock
-        run: npx wait-on http-get://localhost:4010/health --timeout 60000
+        run: |
+          npx wait-on http://localhost:4010/health --timeout 60000
+          npx wait-on http://localhost:4011/health --timeout 60000
 
       - name: Run Newman
         run: |
-          npx newman run postman/collections/core.postman_collection.json \
-          -e postman/environments/mock.json \
-          -r cli,junit \
-          --reporters-junit-export reports/newman-report.xml
+          npx newman run postman/collections/FIT4110_lab03_core_business.postman_collection.json \
+          -e postman/environments/FIT4110_lab03_core_mock.postman_environment.json \
+          -r cli,junit,htmlextra \
+          --reporter-junit-export reports/newman-report.xml \
+          --reporter-htmlextra-export reports/newman-report.html
+
 
       - name: Upload report
         uses: actions/upload-artifact@v4
