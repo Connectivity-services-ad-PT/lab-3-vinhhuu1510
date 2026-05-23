@@ -22,10 +22,10 @@ jobs:
         run: npx @redocly/cli lint contracts/*.yaml
 
       - name: Start mock server
-        run: nohup npx prism mock contracts/core-business.openapi.yaml > prism.log 2>&1 &
+        run: nohup npx prism mock contracts/core-business.openapi.yaml --port 4010 --host 0.0.0.0 > prism.log 2>&1 &
 
       - name: Wait for mock
-        run: npx wait-on http://localhost:4010/health --timeout 30000
+        run: npx wait-on http://localhost:4010/health --timeout 60000
 
       - name: Run Newman
         run: |
@@ -38,3 +38,6 @@ jobs:
         with:
           name: reports
           path: reports/
+      - name: Show Prism log if failed
+        if: failure()
+        run: cat prism.log
