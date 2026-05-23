@@ -20,15 +20,22 @@ jobs:
 
       - name: Lint OpenAPI
         run: npx @redocly/cli lint contracts/*.yaml
-
+      - name: Install Prism
+        run: npm install -g @stoplight/prism-cli
       - name: Start mock server
-        run: nohup npx prism mock contracts/core-business.openapi.yaml --port 4010 --host 0.0.0.0 > prism.log 2>&1 &
+        run: |
+          nohup npx prism mock contracts/core-business.openapi.yaml \
+          --port 4010 \
+          --host 0.0.0.0 > prism.log 2>&1 &
 
-      - name: Debug Prism log
-        run: sleep 5 && cat prism.log
+      - name: Wait 5s for Prism
+        run: sleep 5
+
+      - name: Show Prism log (DEBUG)
+        run: cat prism.log
 
       - name: Wait for mock
-        run: npx wait-on http://localhost:4010/health --timeout 60000
+        run: npx wait-on http-get://localhost:4010/health --timeout 60000
 
       - name: Run Newman
         run: |
