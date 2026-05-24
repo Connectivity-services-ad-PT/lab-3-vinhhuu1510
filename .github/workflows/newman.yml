@@ -20,11 +20,13 @@ jobs:
 
       - name: Lint OpenAPI
         run: npx @redocly/cli lint contracts/*.yaml
+
       - name: Install Prism
         run: npm install -g @stoplight/prism-cli
 
       - name: Start mock servers
         run: |
+          mkdir -p reports
           nohup npx prism mock contracts/core-business.openapi.yaml --port 4010 --host 0.0.0.0 > core.log 2>&1 &
           nohup npx prism mock contracts/access-gate.openapi.yaml --port 4011 --host 0.0.0.0 > gate.log 2>&1 &
 
@@ -39,8 +41,8 @@ jobs:
 
       - name: Wait for mock
         run: |
-          npx wait-on http://localhost:4010/health --timeout 60000
-          npx wait-on http://localhost:4011/health --timeout 60000
+          npx wait-on http-get://localhost:4010/health --timeout 60000
+          # npx wait-on http-get://localhost:4011/health --timeout 60000
 
       - name: Run Newman
         run: |
@@ -49,7 +51,6 @@ jobs:
           -r cli,junit,htmlextra \
           --reporter-junit-export reports/newman-report.xml \
           --reporter-htmlextra-export reports/newman-report.html
-
 
       - name: Upload report
         uses: actions/upload-artifact@v4
