@@ -42,7 +42,7 @@ jobs:
       - name: Wait for mock
         run: |
           npx wait-on http-get://localhost:4010/health --timeout 60000
-          # npx wait-on http-get://localhost:4011/health --timeout 60000
+          npx wait-on tcp:localhost:4011 --timeout 60000
 
       - name: Run Newman
         run: |

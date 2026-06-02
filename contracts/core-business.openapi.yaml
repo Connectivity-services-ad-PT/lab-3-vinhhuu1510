@@ -2,9 +2,6 @@ openapi: 3.1.0
 info:
   title: Smart Campus Core Business Service API
   version: 1.0.0
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
   description: |
     API Contract-First của dịch vụ xử lý nghiệp vụ trung tâm (Nhóm B6 - Product B).
     Hợp đồng này quy định luồng giao tiếp REST đồng bộ với Access Gate Service (Nhóm B3)
@@ -14,8 +11,6 @@ info:
     email: 1771020481@dnu.edu.vn
 
 servers:
-  # no-server-example.com warning is accepted because
-  # Prism mock server runs on localhost in lab environment  
   - url: http://localhost:4010
     description: Prism Mock Server dùng cho Lab 02
 
@@ -58,12 +53,6 @@ paths:
                     type: string
                     format: date-time
                     examples: ["2026-05-18T10:30:00Z"]
-        '400':
-            description: Yêu cầu không hợp lệ
-            content:
-              application/problem+json:
-                schema:
-                  $ref: '#/components/schemas/ProblemDetails'          
 
   /api/v1/events/access:
     post:
@@ -103,14 +92,83 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+    get:
+      summary: Lấy lịch sử sự kiện quẹt thẻ
+      description: Truy vấn danh sách các sự kiện quẹt thẻ đã xảy ra tại các cổng an ninh. Hỗ trợ phân trang bằng cursor.
+      operationId: listAccessEvents
+      tags:
+        - Giám sát Ra Vào
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Số lượng bản ghi tối đa trả về trên một trang.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            examples: [20]
+        - name: cursor
+          in: query
+          required: false
+          description: Con trỏ phân trang (cursor) nhận từ phản hồi trước để truy vấn trang kế tiếp.
+          schema:
+            type: string
+            examples: ["eyJpZCI6IkFDQy0yMDI2MDUxOC0wMDA1In0="]
+      responses:
+        '200':
+          description: Truy vấn lịch sử quẹt thẻ thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - data
+                  - pagination
+                properties:
+                  status:
+                    type: string
+                    examples: ["success"]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccessEventHistoryItem'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '401':
+          description: Không có quyền truy cập
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
 
   /api/v1/alerts:
     get:
       summary: Lấy danh sách các cảnh báo vận hành hiện tại
-      description: Lấy toàn bộ danh sách các alert (an ninh, môi trường) đã được Core xử lý sinh ra.
+      description: Lấy toàn bộ danh sách các alert (an ninh, môi trường) đã được Core xử lý sinh ra. Hỗ trợ phân trang bằng cursor.
       operationId: listAlerts
       tags:
         - Quản lý Cảnh báo
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Số lượng bản ghi tối đa trả về trên một trang.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            examples: [20]
+        - name: cursor
+          in: query
+          required: false
+          description: Con trỏ phân trang (cursor) nhận từ phản hồi trước để truy vấn trang kế tiếp.
+          schema:
+            type: string
+            examples: ["eyJpZCI6IkFMVC1CNi0yMDI2MDUxOC0wMTAifQ=="]
       responses:
         '200':
           description: Truy vấn danh sách cảnh báo thành công
@@ -121,6 +179,7 @@ paths:
                 required:
                   - status
                   - data
+                  - pagination
                 properties:
                   status:
                     type: string
@@ -129,26 +188,14 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Alert'
-        '400':
-          description: Tham số truy vấn không hợp lệ
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
         '401':
           description: Không có quyền truy cập
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-
-        '404':
-          description: Không có dữ liệu cảnh báo
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'        
 
   /api/v1/alerts/{id}:
     get:
@@ -178,6 +225,39 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+
+webhooks:
+  securityAlertWebhook:
+    post:
+      summary: Gửi cảnh báo an ninh khẩn cấp đến hệ thống đăng ký nhận webhook
+      description: |
+        Được kích hoạt tự động bởi Core Business Service khi phát hiện cảnh báo ở mức độ cao (high severity),
+        nhằm đẩy thông tin sự cố tới các hệ thống giám sát của bên thứ ba.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_type
+                - alert
+                - timestamp
+              properties:
+                event_type:
+                  type: string
+                  examples: ["security.alert.dispatched"]
+                alert:
+                  $ref: '#/components/schemas/Alert'
+                timestamp:
+                  type: string
+                  format: date-time
+                  examples: ["2026-05-18T08:30:15Z"]
+      responses:
+        '200':
+          description: Webhook được nhận và xử lý thành công từ phía máy chủ nhận
+        '202':
+          description: Webhook được tiếp nhận để xử lý bất đồng bộ
 
 components:
   securitySchemes:
@@ -269,7 +349,6 @@ components:
           type: [string, "null"]
           format: date-time
           description: Thời điểm sự cố được xử lý xong. Dùng mảng kiểu dữ liệu thay thế hoàn toàn cho nullable cũ của OpenAPI 3.0.
-          examples: [null]
 
     # 4. Schema cấu trúc báo lỗi chuẩn hóa Problem Details (RFC 7807) áp dụng cho lỗi 4xx/5xx
     ProblemDetails:
@@ -296,8 +375,7 @@ components:
         instance:
           type: [string, "null"]
           format: uri
-          examples:
-            - "http://localhost:4010/api/v1/events/access"
+          examples: ["/api/v1/events/access"]
 
     # 5. Schema Đa hình mô phỏng Hệ sinh thái Sự kiện (oneOf + discriminator nâng cao)
     GenericCampusEvent:
@@ -318,3 +396,61 @@ components:
         propertyName: event_type
         mapping:
           access_event: '#/components/schemas/AccessEventRequest'
+
+    # 6. Schema thông tin phân trang dựa trên Cursor (Cursor-based Pagination)
+    PaginationInfo:
+      type: object
+      required:
+        - next_cursor
+        - has_more
+      properties:
+        next_cursor:
+          type: [string, "null"]
+          description: Con trỏ trỏ đến trang tiếp theo. Nếu là null nghĩa là không còn trang tiếp theo.
+          examples: ["eyJpZCI6IkFMVC1CNi0yMDI2MDUxOC0wMTAifQ=="]
+        has_more:
+          type: boolean
+          description: Cho biết có còn dữ liệu ở trang tiếp theo hay không.
+          examples: [true]
+
+    # 7. Schema chi tiết một bản ghi lịch sử sự kiện quẹt thẻ
+    AccessEventHistoryItem:
+      type: object
+      required:
+        - event_id
+        - card_id
+        - gate_id
+        - direction
+        - timestamp
+        - access_granted
+        - reason
+      properties:
+        event_id:
+          type: string
+          description: Mã định danh sự kiện (UUID)
+          examples: ["acc-uuid-2026-b6"]
+        card_id:
+          type: string
+          description: Mã UID của thẻ RFID
+          examples: ["RFID-2026-9999"]
+        gate_id:
+          type: string
+          description: Mã cổng kiểm soát
+          examples: ["gate-lib-01"]
+        direction:
+          type: string
+          enum: [IN, OUT]
+          examples: ["IN"]
+        timestamp:
+          type: string
+          format: date-time
+          description: Thời gian quẹt thẻ
+          examples: ["2026-05-18T08:30:00Z"]
+        access_granted:
+          type: boolean
+          description: Kết quả phê duyệt quyền truy cập
+          examples: [true]
+        reason:
+          type: string
+          description: Lý do đi kèm quyết định
+          examples: ["Thẻ hợp lệ"]
